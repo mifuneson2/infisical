@@ -1,16 +1,14 @@
 # SELF-HOSTED FORK PATCH (build-image): builds the patched standalone image for the
-# self-hosted instance and pushes it to this fork's GHCR. Manual trigger only.
+# self-hosted instance and pushes it to this fork's GHCR.
+# Trigger: push a git tag "selfhosted-<upstream version>-<suffix>", e.g. selfhosted-v0.166.8-mfa.1.
+# The image is tagged without the "selfhosted-" prefix (v0.166.8-mfa.1) and reports the
+# upstream version (v0.166.8). The prefix keeps it clear of upstream's v0.*.* release workflow.
 name: Build self-hosted image
 
 on:
-    workflow_dispatch:
-        inputs:
-            image_tag:
-                description: "Image tag to push (e.g. v0.166.8-mfa.1)"
-                required: true
-            platform_version:
-                description: "Version shown by Infisical (upstream release this branch is based on)"
-                required: true
+    push:
+        tags:
+            - "selfhosted-v*"
 
 permissions:
     contents: read
@@ -29,6 +27,13 @@ jobs:
             - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
             - name: Read pinned versions
               run: grep -E '^[A-Z_]+=' build-versions.env >> "$GITHUB_ENV"
+            - name: Derive image tag and platform version
+              run: |
+                  image_tag="${GITHUB_REF_NAME#selfhosted-}"
+                  platform_version="${image_tag%%-*}"
+                  echo "IMAGE_TAG=$image_tag" >> "$GITHUB_ENV"
+                  echo "PLATFORM_VERSION=$platform_version" >> "$GITHUB_ENV"
+                  echo "image tag: $image_tag, platform version: $platform_version"
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
             - name: Login to GHCR
@@ -44,10 +49,10 @@ jobs:
                   file: Dockerfile.standalone-infisical
                   platforms: linux/amd64
                   push: true
-                  tags: ghcr.io/${{ github.repository_owner }}/infisical:${{ inputs.image_tag }}
+                  tags: ghcr.io/${{ github.repository_owner }}/infisical:${{ env.IMAGE_TAG }}
                   build-args: |
                       INFISICAL_CLI_VERSION=${{ env.INFISICAL_CLI_VERSION }}
-                      INFISICAL_PLATFORM_VERSION=${{ inputs.platform_version }}
+                      INFISICAL_PLATFORM_VERSION=${{ env.PLATFORM_VERSION }}
                   labels: |
                       org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
                       org.opencontainers.image.revision=${{ github.sha }}
