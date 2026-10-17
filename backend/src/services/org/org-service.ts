@@ -536,12 +536,9 @@ export const orgServiceFactory = ({
     }
 
     if (enforceMfa !== undefined) {
-      if (!plan.enforceMfa) {
-        throw new BadRequestError({
-          message: "Failed to enforce user MFA due to plan restriction. Upgrade plan to enforce/un-enforce MFA."
-        });
-      }
-
+      // SELF-HOSTED FORK PATCH (mfa-enforcement): upstream rejected this when !plan.enforceMfa.
+      // Plan check removed so self-hosted orgs can enforce MFA. Keep removed when merging upstream.
+      // Related: frontend/src/pages/organization/SettingsPage/components/OrgSecurityTab/OrgGenericAuthSection.tsx
       if (!appCfg.isSmtpConfigured) {
         throw new BadRequestError({
           message: "Failed to enforce user MFA due to missing instance SMTP configuration."

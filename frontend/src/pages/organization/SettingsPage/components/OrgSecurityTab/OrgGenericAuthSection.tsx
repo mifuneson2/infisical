@@ -23,29 +23,24 @@ import {
   SelectValue,
   Toggle
 } from "@app/components/v3";
-import {
-  OrgPermissionActions,
-  OrgPermissionSubjects,
-  useOrganization,
-  useSubscription
-} from "@app/context";
+import { OrgPermissionActions, OrgPermissionSubjects, useOrganization } from "@app/context";
 import { useUpdateOrg } from "@app/hooks/api";
 import { MfaMethod } from "@app/hooks/api/auth/types";
 import { usePopUp } from "@app/hooks/usePopUp";
 
 export const OrgGenericAuthSection = () => {
   const { currentOrg } = useOrganization();
-  const { subscription } = useSubscription();
-  const { popUp, handlePopUpOpen, handlePopUpToggle } = usePopUp(["upgradePlan"] as const);
+  // SELF-HOSTED FORK PATCH (mfa-enforcement): useSubscription and handlePopUpOpen removed with the
+  // plan checks below; the UpgradeGate stays rendered but is never opened. Keep removed when merging upstream.
+  const { popUp, handlePopUpToggle } = usePopUp(["upgradePlan"] as const);
 
   const { mutateAsync } = useUpdateOrg();
 
   const handleEnforceMfaToggle = async (value: boolean) => {
     if (!currentOrg?.id) return;
-    if (!subscription?.enforceMfa) {
-      handlePopUpOpen("upgradePlan");
-      return;
-    }
+    // SELF-HOSTED FORK PATCH (mfa-enforcement): upstream opened the upgrade popup here when
+    // !subscription?.enforceMfa. Plan check removed; keep removed when merging upstream.
+    // Related: backend/src/services/org/org-service.ts (updateOrg)
 
     await mutateAsync({
       orgId: currentOrg?.id,
@@ -60,10 +55,7 @@ export const OrgGenericAuthSection = () => {
 
   const handleUpdateSelectedMfa = async (selectedMfaMethod: MfaMethod) => {
     if (!currentOrg?.id) return;
-    if (!subscription?.enforceMfa) {
-      handlePopUpOpen("upgradePlan");
-      return;
-    }
+    // SELF-HOSTED FORK PATCH (mfa-enforcement): plan check removed; see handleEnforceMfaToggle.
 
     await mutateAsync({
       orgId: currentOrg?.id,

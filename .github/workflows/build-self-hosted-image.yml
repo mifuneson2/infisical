@@ -1,0 +1,53 @@
+# SELF-HOSTED FORK PATCH (build-image): builds the patched standalone image for the
+# self-hosted instance and pushes it to this fork's GHCR. Manual trigger only.
+name: Build self-hosted image
+
+on:
+    workflow_dispatch:
+        inputs:
+            image_tag:
+                description: "Image tag to push (e.g. v0.166.8-mfa.1)"
+                required: true
+            platform_version:
+                description: "Version shown by Infisical (upstream release this branch is based on)"
+                required: true
+
+permissions:
+    contents: read
+    packages: write
+
+jobs:
+    build:
+        name: Build and push to GHCR
+        runs-on: ubuntu-latest
+        timeout-minutes: 120
+        steps:
+            - name: Free disk space
+              run: |
+                  sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+                  df -h /
+            - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+            - name: Read pinned versions
+              run: grep -E '^[A-Z_]+=' build-versions.env >> "$GITHUB_ENV"
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+            - name: Login to GHCR
+              uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+            - name: Build and push
+              uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+              with:
+                  context: .
+                  file: Dockerfile.standalone-infisical
+                  platforms: linux/amd64
+                  push: true
+                  tags: ghcr.io/${{ github.repository_owner }}/infisical:${{ inputs.image_tag }}
+                  build-args: |
+                      INFISICAL_CLI_VERSION=${{ env.INFISICAL_CLI_VERSION }}
+                      INFISICAL_PLATFORM_VERSION=${{ inputs.platform_version }}
+                  labels: |
+                      org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+                      org.opencontainers.image.revision=${{ github.sha }}
