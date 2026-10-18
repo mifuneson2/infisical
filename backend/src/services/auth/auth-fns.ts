@@ -52,7 +52,7 @@ export const assertOAuthLoginMethodEnabled = ({
 
 /*
  * Determines whether MFA is required and which method applies, based on org enforcement vs user
- * preference. Org enforcement takes precedence over the user's own selection. Shared between the
+ * preference. Org enforcement requires MFA; the user's own selection picks the method. Shared between the
  * login flow (which challenges for MFA) and the OAuth consent flow (which must reject sessions that
  * never completed a required MFA challenge before issuing a delegation code).
  */
@@ -64,8 +64,13 @@ export const getRequiredMfaMethod = (
   const isUserMfaEnabled = Boolean(user.isMfaEnabled);
   const isMfaRequired = isOrgMfaEnforced || isUserMfaEnabled;
 
+  // SELF-HOSTED FORK PATCH (mfa-preference): upstream let the enforcing org's method override the
+  // user's choice. Here the user's preferred method wins when they have MFA enabled with one selected
+  // (activateMfa/setSelectedMfaMethod only store configured factors); the org method is the default.
+  // Keep when merging upstream. Related: getStepUpMfaMethod cases in user-service.test.ts.
+  const userPreferredMfaMethod = isUserMfaEnabled ? (user.selectedMfaMethod as MfaMethod | null) : null;
   const requiredMfaMethod = isOrgMfaEnforced
-    ? ((org.selectedMfaMethod as MfaMethod) ?? MfaMethod.EMAIL)
+    ? (userPreferredMfaMethod ?? (org.selectedMfaMethod as MfaMethod) ?? MfaMethod.EMAIL)
     : ((user.selectedMfaMethod as MfaMethod) ?? MfaMethod.EMAIL);
 
   return { isMfaRequired, requiredMfaMethod };

@@ -271,9 +271,11 @@ describe("resolveMfaMethodAfterRemoval", () => {
 });
 
 describe("getStepUpMfaMethod", () => {
-  test("challenges the org-enforced method and accepts nothing else", async () => {
+  // SELF-HOSTED FORK PATCH (mfa-preference): upstream expected the org method to override the user's
+  // preference. Here the org method only applies when the user has no MFA preference of their own.
+  test("challenges the org-enforced method when the user has no preference", async () => {
     const service = buildMfaService({
-      userRow: { isMfaEnabled: true, selectedMfaMethod: MfaMethod.EMAIL },
+      userRow: { isMfaEnabled: false, selectedMfaMethod: null },
       orgs: [{ id: ENFORCED_ORG_ID, enforceMfa: true, selectedMfaMethod: MfaMethod.WEBAUTHN }]
     });
 
@@ -283,9 +285,21 @@ describe("getStepUpMfaMethod", () => {
     });
   });
 
+  test("challenges the user's preferred method over the org-enforced one", async () => {
+    const service = buildMfaService({
+      userRow: { isMfaEnabled: true, selectedMfaMethod: MfaMethod.TOTP },
+      orgs: [{ id: ENFORCED_ORG_ID, enforceMfa: true, selectedMfaMethod: MfaMethod.WEBAUTHN }]
+    });
+
+    await expect(service.getStepUpMfaMethod(USER_ID, ENFORCED_ORG_ID)).resolves.toEqual({
+      challenge: MfaMethod.TOTP,
+      accepted: [MfaMethod.TOTP]
+    });
+  });
+
   test("reads enforcement off the root org when the session is scoped to a sub-org", async () => {
     const service = buildMfaService({
-      userRow: { isMfaEnabled: true, selectedMfaMethod: MfaMethod.EMAIL },
+      userRow: { isMfaEnabled: false, selectedMfaMethod: null },
       orgs: [
         { id: "sub-org", rootOrgId: ENFORCED_ORG_ID },
         { id: ENFORCED_ORG_ID, enforceMfa: true, selectedMfaMethod: MfaMethod.WEBAUTHN }
