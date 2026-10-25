@@ -81,23 +81,18 @@ export const folderPermissionServiceFactory = ({
   secretFolderDAL,
   permissionService,
   folderPermissionDAL,
-  licenseService,
   keyStore
 }: TFolderPermissionServiceFactoryDep) => {
-  const assertFolderRbacLicensed = async (orgId: string) => {
-    const plan = await licenseService.getPlan(orgId);
-    if (!plan.secretsFolderRbac) {
-      throw new BadRequestError({
-        message: "Failed to access folder access controls due to plan restriction. Upgrade your Infisical plan."
-      });
-    }
-  };
+  // SELF-HOSTED FORK PATCH (folder-access-controls): upstream had assertFolderRbacLicensed here, which
+  // rejected every folder grant call when !plan.secretsFolderRbac. Removed with its call sites so
+  // self-hosted orgs can manage folder access. Keep removed when merging upstream.
+  // Related: frontend/src/pages/secret-manager/OverviewPage/OverviewPage.tsx (handleFolderAccessOpen)
 
   const createFolderGrant = async (dto: TCreateFolderGrantDTO) => {
     const { projectId, environmentSlug, secretPath, target } = dto;
     assertFullAccessIsPermanent(dto.role, Boolean(dto.type?.isTemporary));
 
-    await assertFolderRbacLicensed(dto.permission.orgId);
+    // SELF-HOSTED FORK PATCH (folder-access-controls): plan check removed; see factory top.
     const callerPermission = await getFolderAccessPermission(dto.permission, projectId, permissionService);
     const folder = await resolveFolder(projectId, environmentSlug, secretPath, secretFolderDAL);
     assertManageFolderAccess(callerPermission, folder);
@@ -142,7 +137,7 @@ export const folderPermissionServiceFactory = ({
 
   const updateFolderGrant = async (dto: TUpdateFolderGrantDTO) => {
     const { projectId, environmentSlug, secretPath, target } = dto;
-    await assertFolderRbacLicensed(dto.permission.orgId);
+    // SELF-HOSTED FORK PATCH (folder-access-controls): plan check removed; see factory top.
     const callerPermission = await getFolderAccessPermission(dto.permission, projectId, permissionService);
     const folder = await resolveFolder(projectId, environmentSlug, secretPath, secretFolderDAL);
     assertManageFolderAccess(callerPermission, folder);
@@ -182,7 +177,7 @@ export const folderPermissionServiceFactory = ({
 
   const deleteFolderGrant = async (dto: TDeleteFolderGrantDTO) => {
     const { projectId, environmentSlug, secretPath, target } = dto;
-    await assertFolderRbacLicensed(dto.permission.orgId);
+    // SELF-HOSTED FORK PATCH (folder-access-controls): plan check removed; see factory top.
     const callerPermission = await getFolderAccessPermission(dto.permission, projectId, permissionService);
     const folder = await resolveFolder(projectId, environmentSlug, secretPath, secretFolderDAL);
     assertManageFolderAccess(callerPermission, folder);
@@ -259,7 +254,7 @@ export const folderPermissionServiceFactory = ({
   ) => {
     const { projectId, environmentSlug, secretPath, limit, offset, search } = dto;
     const { orgId } = dto.permission;
-    await assertFolderRbacLicensed(orgId);
+    // SELF-HOSTED FORK PATCH (folder-access-controls): plan check removed; see factory top.
     const callerPermission = await getFolderAccessPermission(dto.permission, projectId, permissionService);
     const folder = await resolveFolder(projectId, environmentSlug, secretPath, secretFolderDAL);
     assertManageFolderAccess(callerPermission, folder);
@@ -346,7 +341,7 @@ export const folderPermissionServiceFactory = ({
 
   const listActorFolderGrants = async (dto: TListActorFolderGrantsDTO) => {
     const { projectId, target } = dto;
-    await assertFolderRbacLicensed(dto.permission.orgId);
+    // SELF-HOSTED FORK PATCH (folder-access-controls): plan check removed; see factory top.
     const callerPermission = await getFolderAccessPermission(dto.permission, projectId, permissionService);
     assertReadActorGrantsAccess(callerPermission, target);
 

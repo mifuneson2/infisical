@@ -51,8 +51,7 @@ import {
   ProjectPermissionIdentityActions,
   ProjectPermissionSub,
   useOrganization,
-  useProject,
-  useSubscription
+  useProject
 } from "@app/context";
 import {
   getProjectBaseURL,
@@ -90,7 +89,6 @@ const Page = () => {
   });
   const { currentProject, projectId } = useProject();
   const { currentOrg, isSubOrganization } = useOrganization();
-  const { subscription } = useSubscription();
 
   const { data: identityMembershipDetails, isPending: isMembershipDetailsLoading } =
     useGetProjectIdentityMembershipV2(projectId, identityId, currentProject?.type);
@@ -105,7 +103,10 @@ const Page = () => {
   const isAgentVault = currentProject?.type === ProjectType.AgentVault;
   // Products where the underlying project is an internal detail the user never sees
   const isSecretManager = currentProject?.type === ProjectType.SecretManager;
-  const hasFolderRbacPlan = Boolean(subscription?.secretsFolderRbac);
+  // SELF-HOSTED FORK PATCH (folder-access-controls): upstream set this from
+  // subscription?.secretsFolderRbac, hiding FolderAccessSection without the plan. Keep true when
+  // merging upstream. Related: backend/src/services/folder-permission/folder-permission-service.ts
+  const hasFolderRbacPlan = true;
   const isStandaloneProduct = isCertManager || isPam || isAgentVault;
   const canAssumePrivileges = supportsAssumePrivileges(currentProject.type);
 

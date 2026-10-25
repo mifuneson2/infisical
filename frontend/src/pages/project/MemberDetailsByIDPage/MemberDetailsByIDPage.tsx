@@ -43,7 +43,6 @@ import {
   ProjectPermissionSub,
   useOrganization,
   useProject,
-  useSubscription,
   useUser
 } from "@app/context";
 import {
@@ -73,7 +72,6 @@ export const Page = () => {
   });
   const { currentOrg } = useOrganization();
   const { currentProject, projectId } = useProject();
-  const { subscription } = useSubscription();
   const {
     user: { id: currentUserId }
   } = useUser();
@@ -154,7 +152,10 @@ export const Page = () => {
   const isCertManager = currentProject?.type === ProjectType.CertificateManager;
   const projectLabel = getProjectLabel(currentProject?.type);
   const isSecretManager = currentProject.type === ProjectType.SecretManager;
-  const hasFolderRbacPlan = Boolean(subscription?.secretsFolderRbac);
+  // SELF-HOSTED FORK PATCH (folder-access-controls): upstream set this from
+  // subscription?.secretsFolderRbac, hiding FolderAccessSection without the plan. Keep true when
+  // merging upstream. Related: backend/src/services/folder-permission/folder-permission-service.ts
+  const hasFolderRbacPlan = true;
   const canAssumePrivileges = !isCertManager && supportsAssumePrivileges(currentProject.type);
   let memberDisplayName = "Unnamed User";
   if (membershipDetails) {

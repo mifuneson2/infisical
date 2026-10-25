@@ -51,7 +51,6 @@ import {
   DynamicSecretsUpgradeIntent,
   EnterpriseSecretSyncsUpgradeIntent,
   EnvironmentLimitUpgradeIntent,
-  FolderAccessControlsUpgradeIntent,
   hasEnvironmentCapacity,
   HoneyTokensUpgradeIntent,
   PointInTimeRecoveryUpgradeIntent,
@@ -1462,24 +1461,12 @@ const OverviewPageContent = () => {
         });
       };
 
-      if (!subscription?.secretsFolderRbac) {
-        openUpgradeGate({
-          intent: FolderAccessControlsUpgradeIntent
-        });
-        return;
-      }
-
+      // SELF-HOSTED FORK PATCH (folder-access-controls): upstream opened the upgrade gate here when
+      // !subscription?.secretsFolderRbac. Plan check removed; keep removed when merging upstream.
+      // Related: backend/src/services/folder-permission/folder-permission-service.ts
       openFolderAccess();
     },
-    [
-      getFolderByNameAndEnv,
-      singleEnvSlug,
-      childFolderPath,
-      orgId,
-      projectId,
-      subscription?.secretsFolderRbac,
-      openUpgradeGate
-    ]
+    [getFolderByNameAndEnv, singleEnvSlug, childFolderPath, orgId, projectId]
   );
 
   const handleCurrentFolderAccessOpen = useCallback(() => {
@@ -1491,22 +1478,9 @@ const OverviewPageContent = () => {
       });
     };
 
-    if (!subscription?.secretsFolderRbac) {
-      openUpgradeGate({
-        intent: FolderAccessControlsUpgradeIntent
-      });
-      return;
-    }
-
+    // SELF-HOSTED FORK PATCH (folder-access-controls): plan check removed; see handleFolderAccessOpen.
     openCurrentFolderAccess();
-  }, [
-    openUpgradeGate,
-    orgId,
-    projectId,
-    secretPath,
-    singleEnvSlug,
-    subscription?.secretsFolderRbac
-  ]);
+  }, [orgId, projectId, secretPath, singleEnvSlug]);
 
   const handleAddSecretImport = () => {
     handlePopUpOpen("addSecretImport");
