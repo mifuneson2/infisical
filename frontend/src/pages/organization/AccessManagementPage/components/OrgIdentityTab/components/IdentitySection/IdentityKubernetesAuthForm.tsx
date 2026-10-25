@@ -357,11 +357,9 @@ export const IdentityKubernetesAuthForm = ({
         });
       }
 
-      if (
-        subscription?.ipAllowlisting &&
-        role.token_bound_cidrs &&
-        role.token_bound_cidrs.length > 0
-      ) {
+      // SELF-HOSTED FORK PATCH (identity-ip-allowlist): upstream also required
+      // subscription?.ipAllowlisting to copy the template's token_bound_cidrs. Keep removed when merging.
+      if (role.token_bound_cidrs && role.token_bound_cidrs.length > 0) {
         setValue(
           "accessTokenTrustedIps",
           role.token_bound_cidrs.map((cidr) => ({ ipAddress: cidr })),

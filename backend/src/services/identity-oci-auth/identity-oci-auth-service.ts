@@ -77,7 +77,6 @@ export const identityOciAuthServiceFactory = ({
   identityOciAuthDAL,
   membershipIdentityDAL,
   keyStore,
-  licenseService,
   permissionService,
   orgDAL,
   identityAccessTokenService,
@@ -337,17 +336,9 @@ export const identityOciAuthServiceFactory = ({
 
     await validateIdentityUpdateForSuperAdminPrivileges(identityId, isActorSuperAdmin);
 
-    const plan = await licenseService.getPlan(identityMembershipOrg.scopeOrgId);
     const reformattedAccessTokenTrustedIps = accessTokenTrustedIps.map((accessTokenTrustedIp) => {
-      if (
-        !plan.ipAllowlisting &&
-        accessTokenTrustedIp.ipAddress !== "0.0.0.0/0" &&
-        accessTokenTrustedIp.ipAddress !== "::/0"
-      )
-        throw new BadRequestError({
-          message:
-            "Failed to add IP access range to access token due to plan restriction. Upgrade plan to add IP access range."
-        });
+      // SELF-HOSTED FORK PATCH (identity-ip-allowlist): plan check on non-wildcard trusted IPs removed;
+      // keep removed when merging upstream. Enforcement: identity-access-token-service.ts (checkIPAgainstBlocklist)
       if (!isValidIpOrCidr(accessTokenTrustedIp.ipAddress))
         throw new BadRequestError({
           message: "The IP is not a valid IPv4, IPv6, or CIDR block"
@@ -444,17 +435,9 @@ export const identityOciAuthServiceFactory = ({
 
     await validateIdentityUpdateForSuperAdminPrivileges(identityId, isActorSuperAdmin);
 
-    const plan = await licenseService.getPlan(identityMembershipOrg.scopeOrgId);
     const reformattedAccessTokenTrustedIps = accessTokenTrustedIps?.map((accessTokenTrustedIp) => {
-      if (
-        !plan.ipAllowlisting &&
-        accessTokenTrustedIp.ipAddress !== "0.0.0.0/0" &&
-        accessTokenTrustedIp.ipAddress !== "::/0"
-      )
-        throw new BadRequestError({
-          message:
-            "Failed to add IP access range to access token due to plan restriction. Upgrade plan to add IP access range."
-        });
+      // SELF-HOSTED FORK PATCH (identity-ip-allowlist): plan check on non-wildcard trusted IPs removed;
+      // keep removed when merging upstream. Enforcement: identity-access-token-service.ts (checkIPAgainstBlocklist)
       if (!isValidIpOrCidr(accessTokenTrustedIp.ipAddress))
         throw new BadRequestError({
           message: "The IP is not a valid IPv4, IPv6, or CIDR block"

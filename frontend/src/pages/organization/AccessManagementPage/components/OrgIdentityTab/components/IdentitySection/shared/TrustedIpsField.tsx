@@ -33,26 +33,18 @@ type Props = {
  * method supports `accessTokenTrustedIps`; Universal Auth additionally renders
  * `clientSecretTrustedIps` by using a second instance of this component.
  */
-export const TrustedIpsField = ({
-  control,
-  name,
-  label,
-  isAllowed,
-  onUpgradeRequired,
-  tooltip
-}: Props) => {
+export const TrustedIpsField = ({ control, name, label, tooltip }: Props) => {
   const { fields, append, remove } = useFieldArray({ control, name });
 
   // At least one trusted IP is required, so the last remaining row can't be removed.
   const isLast = fields.length <= 1;
 
-  // IP allowlisting is a paid feature, so every mutation is gated behind the upgrade prompt.
+  // SELF-HOSTED FORK PATCH (identity-ip-allowlist): upstream ran onUpgradeRequired here unless
+  // isAllowed (subscription?.ipAllowlisting). Plan check removed; the props stay so the 13 auth forms
+  // are untouched. Keep removed when merging upstream.
+  // Related: backend/src/services/identity-*-auth/*-service.ts
   const guard = (action: () => void) => {
-    if (isAllowed) {
-      action();
-      return;
-    }
-    onUpgradeRequired();
+    action();
   };
 
   return (
